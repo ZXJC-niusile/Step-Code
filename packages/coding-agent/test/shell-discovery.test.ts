@@ -163,4 +163,26 @@ describe("Windows shell discovery", () => {
 		add("/bin/bash");
 		expect(getShellConfig()).toEqual({ shell: "/bin/bash", args: ["-c"] });
 	});
+	it("preserves Unix PATH lookup when /bin/bash is absent", () => {
+		vi.spyOn(process, "platform", "get").mockReturnValue("linux");
+		vi.mocked(spawnSync).mockReturnValue({
+			status: 0,
+			stdout: "/opt/tools/bash\n",
+			stderr: "",
+			pid: 1,
+			output: [],
+			signal: null,
+		});
+		expect(getShellConfig()).toEqual({ shell: "/opt/tools/bash", args: ["-c"] });
+		expect(spawnSync).toHaveBeenCalledWith("which", ["bash"], expect.objectContaining({ timeout: 5000 }));
+	});
+	it("preserves Unix sh fallback when Bash lookup fails", () => {
+		vi.spyOn(process, "platform", "get").mockReturnValue("linux");
+		vi.mocked(spawnSync).mockReturnValue({ status: 1, stdout: "", stderr: "", pid: 1, output: [], signal: null });
+		expect(getShellConfig()).toEqual({ shell: "sh", args: ["-c"] });
+	});
+	it("preserves Unix sh fallback when executable lookup throws", () => {
+		vi.spyOn(process, "platform", "get").mockReturnValue("darwin");
+		expect(getShellConfig()).toEqual({ shell: "sh", args: ["-c"] });
+	});
 });
