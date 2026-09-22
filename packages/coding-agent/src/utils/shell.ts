@@ -88,6 +88,9 @@ export function getShellConfig(customShellPath?: string): ShellConfig {
 	// 1. Check user-specified shell path
 	if (customShellPath) {
 		if (existsSync(customShellPath)) {
+			// Preserve explicitly selected legacy WSL launchers before canonicalization.
+			// Their stdin transport is part of the existing shellPath contract.
+			if (isLegacyWslBashPath(customShellPath)) return getBashShellConfig(customShellPath);
 			return getBashShellConfig(process.platform === "win32" ? resolveExecutable(customShellPath) : customShellPath);
 		}
 		throw new Error(`Custom shell path not found: ${customShellPath}`);
